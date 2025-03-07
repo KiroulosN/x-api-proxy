@@ -20,6 +20,14 @@ module.exports = async (req, res) => {
             }
         });
 
+        // Debug: Return HTML if no tweets found
+        if (tweets.length === 0) {
+            return res.json({ 
+                data: [], 
+                debug: html.substring(0, 500) // First 500 chars of HTML
+            });
+        }
+
         tweets.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         const limitedTweets = tweets.slice(0, 10);
 
