@@ -20,9 +20,7 @@ module.exports = async (req, res) => {
             }
         });
 
-        // Sort by date, most recent first
         tweets.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        // Limit to 10
         const limitedTweets = tweets.slice(0, 10);
 
         res.setHeader('Access-Control-Allow-Origin', '*');
