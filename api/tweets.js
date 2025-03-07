@@ -12,16 +12,14 @@ module.exports = async (req, res) => {
         const $ = cheerio.load(html);
 
         const tweets = [];
-        // Adjust selectors based on xcancel.com's structure (inspected manually)
-        $('div.tweet').each((i, element) => {
-            const text = $(element).find('div.tweet-text').text().trim();
-            const time = $(element).find('time').attr('datetime') || $(element).find('span.timestamp').text().trim();
+        $('article.timeline-item').each((i, element) => {
+            const text = $(element).find('div.tweet-body').text().trim();
+            const time = $(element).find('time').attr('datetime');
             if (text && time) {
                 tweets.push({ text, created_at: time });
             }
         });
 
-        // Sort by date (assuming 'created_at' is a valid date string)
         tweets.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         const limitedTweets = tweets.slice(0, 10);
 
