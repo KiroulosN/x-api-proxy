@@ -1,6 +1,7 @@
 {
-    "dependencies": {
-        "puppeteer-extra": "^3.3.6",
-        "puppeteer-extra-plugin-stealth": "^2.11.2"
+    "functions": {
+        "api/tweets.js": {
+            "maxDuration": 60 // Increase to 60 seconds (requires Vercel Pro, $20/month)
+        }
     }
 }
