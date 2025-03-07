@@ -1,37 +1,33 @@
 const fetch = require('node-fetch');
-
-let cachedTweets = null;
-let lastFetch = 0;
-const cacheDuration = 15 * 60 * 1000; // 15 minutes in ms
+const cheerio = require('cheerio');
 
 module.exports = async (req, res) => {
-    const now = Date.now();
-    if (cachedTweets && (now - lastFetch < cacheDuration)) {
+    try {
+        const response = await fetch('https://x.com/MSFT365Status', {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+        });
+        const html = await response.text();
+        const $ = cheerio.load(html);
+
+        const tweets = [];
+        $('article[data-testid="tweet"]').each((i, element) => {
+            const text = $(element).find('div[lang]').text().trim();
+            const time = $(element).find('time').attr('datetime');
+            if (text && time) {
+                tweets.push({ text, created_at: time });
+            }
+        });
+
+        // Sort by date, most recent first
+        tweets.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        // Limit to 10
+        const limitedTweets = tweets.slice(0, 10);
+
         res.setHeader('Access-Control-Allow-Origin', '*');
-        return res.json(cachedTweets);
+        res.json({ data: limitedTweets });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to scrape tweets', details: error.message });
     }
-
-    const userResponse = await fetch('https://api.twitter.com/2/users/by/username/MSFT365Status', {
-        headers: { 'Authorization': 'Bearer AAAAAAAAAAAAAAAAAAAAACcQzwEAAAAAGgX8SZrFM5S2CkNNAqZPRMhgndw%3D2D0jK1bqS8SAuru2WNWBNx5f23tQAQBtDe94lBFnYgHGEKGbZu' }
-    });
-    const userData = await userResponse.json();
-    if (!userData.data || !userData.data.id) {
-        return res.status(500).json({ error: 'Failed to fetch user ID', details: userData });
-    }
-    const userId = userData.data.id;
-
-    const url = `https://api.twitter.com/2/users/${userId}/tweets?max_results=10&tweet.fields=created_at`;
-    const tweetResponse = await fetch(url, {
-        headers: { 'Authorization': 'Bearer AAAAAAAAAAAAAAAAAAAAACcQzwEAAAAAGgX8SZrFM5S2CkNNAqZPRMhgndw%3D2D0jK1bqS8SAuru2WNWBNx5f23tQAQBtDe94lBFnYgHGEKGbZu' }
-    });
-    const tweetData = await tweetResponse.json();
-
-    if (tweetResponse.status === 429) {
-        return res.status(429).json({ error: 'Rate limit exceeded', details: tweetData });
-    }
-
-    cachedTweets = tweetData;
-    lastFetch = now;
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.json(tweetData);
 };
