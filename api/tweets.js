@@ -1,24 +1,28 @@
-const fetch = require('node-fetch');
-const cheerio = require('cheerio');
+const puppeteer = require('puppeteer');
 
 module.exports = async (req, res) => {
     try {
-        const response = await fetch('https://x.com/MSFT365Status', {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            }
+        const browser = await puppeteer.launch({
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+            headless: 'new'
         });
-        const html = await response.text();
-        const $ = cheerio.load(html);
+        const page = await browser.newPage();
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+        await page.goto('https://x.com/MSFT365Status', { waitUntil: 'networkidle2' });
 
-        const tweets = [];
-        $('article[data-testid="tweet"]').each((i, element) => {
-            const text = $(element).find('div[lang]').text().trim();
-            const time = $(element).find('time').attr('datetime');
-            if (text && time) {
-                tweets.push({ text, created_at: time });
-            }
+        const tweets = await page.evaluate(() => {
+            const tweetList = [];
+            document.querySelectorAll('article[data-testid="tweet"]').forEach(tweet => {
+                const text = tweet.querySelector('div[lang]')?.innerText.trim();
+                const time = tweet.querySelector('time')?.getAttribute('datetime');
+                if (text && time) {
+                    tweetList.push({ text, created_at: time });
+                }
+            });
+            return tweetList;
         });
+
+        await browser.close();
 
         tweets.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         const limitedTweets = tweets.slice(0, 10);
