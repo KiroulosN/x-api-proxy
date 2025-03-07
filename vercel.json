@@ -1,7 +1,0 @@
-{
-    "functions": {
-        "api/tweets.js": {
-            "maxDuration": 60
-        }
-    }
-}
