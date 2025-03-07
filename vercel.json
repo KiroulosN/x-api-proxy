@@ -1,7 +1,7 @@
 {
     "functions": {
         "api/tweets.js": {
-            "maxDuration": 60 // Increase to 60 seconds (requires Vercel Pro, $20/month)
+            "maxDuration": 60
         }
     }
 }
